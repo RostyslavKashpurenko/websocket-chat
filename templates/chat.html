@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+</head>
+
+<body>
+
+<h3>Welcome: {{ user }}</h3>
+
+<hr>
+
+<h4>Create room</h4>
+
+<form action="/create_room" method="post">
+    <input name="name">
+    <button>Create</button>
+</form>
+
+<hr>
+
+<h4>Invite</h4>
+
+<form action="/invite" method="post">
+
+    Room:
+    <select name="room">
+        {% for r in rooms %}
+        <option value="{{ r.id }}">{{ r.name }}</option>
+        {% endfor %}
+    </select>
+
+    User:
+    <input name="user">
+
+    <button>Invite</button>
+
+</form>
+
+<hr>
+
+<h4>Rooms</h4>
+
+<select id="roomSelect">
+
+    {% for r in rooms %}
+
+    {% set usernames = [] %}
+
+    {% for u in r.users %}
+        {% set _ = usernames.append(u.username) %}
+    {% endfor %}
+
+    {% if user in usernames %}
+        <option>{{ r.name }}</option>
+    {% endif %}
+
+{% endfor %}
+
+
+</select>
+
+<button onclick="join()">Join</button>
+<button onclick="leave()">Leave</button>
+
+<hr>
+
+<div id="chat"></div>
+
+<br>
+
+<input id="msg">
+<button onclick="send()">Send</button>
+
+
+<script>
+
+const socket = io();
+
+let currentRoom = "";
+
+
+function join(){
+
+    let room = document.getElementById("roomSelect").value;
+
+    currentRoom = room;
+
+    socket.emit("join", {room: room});
+}
+
+
+function leave(){
+
+    socket.emit("leave", {room: currentRoom});
+}
+
+
+function send(){
+
+    let text = document.getElementById("msg").value;
+
+    socket.emit("send", {
+        room: currentRoom,
+        text: text
+    });
+
+    document.getElementById("msg").value = "";
+}
+
+
+socket.on("message", data => {
+
+    let div = document.createElement("div");
+
+    div.innerHTML =
+        `<b style="color:${data.color}">${data.user}</b>: ${data.text}`;
+
+    document.getElementById("chat").append(div);
+
+});
+
+</script>
+
+</body>
+</html>
